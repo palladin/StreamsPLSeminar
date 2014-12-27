@@ -71,7 +71,7 @@ ICOOOLPS'14
 
 ![Cartesian product](images/cartesian_lin.jpg)
 
----
+***
 
 #### Java 8 very fast
 
@@ -117,8 +117,9 @@ ICOOOLPS'14
 		fun () -> 
 			let index = ref -1
 			(fun () ->
+				incr index
 				if !index < Array.length values then 
-					incr index; (f values.[!index])
+					f values.[!index])
 				else
 					raise StreamEnd)
 
@@ -150,7 +151,8 @@ ICOOOLPS'14
 
 ### Simple functions
 
-	 val iter : ('T -> unit) -> Stream<'T> -> unit 
+	 val iter : ('T -> unit) -> Stream<'T> -> unit
+	 let iter f stream
 		let rec loop v next =
 			f v; loop (next ()) next
 		let next = stream ()
@@ -296,7 +298,9 @@ Zip needs to synchronise the flow of values.
 Zip needs to pull!
 
 ---
+	type Stream<'T>     = ('T -> unit) -> unit
 	type StreamPull<'T> = unit -> (unit -> 'T)
+	
     val toPull : Stream<'T> -> StreamPull<'T>
 	let toPull stream = ???
 	
@@ -319,6 +323,84 @@ Zip needs to pull!
 	/// Represents a Stream of values.
 	type Stream<'T> = Stream of ('T -> unit) -> Iterable
 
+---
+
+### ofArray
+
+    val ofArray : 'T[] -> Stream<'T>
+	let ofArray values = 
+		fun k ->
+			let bulk () =
+				for value in values do
+					k value
+					
+			let index = ref -1
+			let tryAdvance () =
+				incr index;
+				if !index < Array.length values then 
+					(k values.[!index])
+					true
+				else
+					false
+			{ Builk = bulk; TryAdvance = tryAdvance  }
+---
+
+### toPull
+
+    val toPull : Stream<'T> -> StreamPull<'T>
+	let toPull stream = 
+		fun () ->
+			let current = ref None
+			let { Bulk = _; TryAdvance = next } = stream (fun v -> current := v)
+			fun () ->
+				let rec loop () =
+					if next () then
+						match !current with
+						| Some v ->
+							current := None
+							v
+						| None -> loop ()
+					else raise StreamEnd
+				loop ()
+			
+
+---			
+
+### toPull - Revised
+
+    val toPull : Stream<'T> -> StreamPull<'T>
+	let toPull stream = 
+		fun () ->
+			let buffer = new ResizeArray<'T>()
+			let { Bulk = _; TryAdvance = next } = stream (fun v -> buffer.Add(v))
+			let index = ref -1
+			fun () ->
+				let rec loop () =
+					incr index
+					if !index < buffer.Count then
+						buffer.[!index]
+					else
+						buffer.Clear()
+						index := -1
+						if next () then
+							loop ()
+						else raise StreamEnd
+				loop ()
+	
+			
+---
+
+### Gotcha!
+
+     let pull = 
+		[|1..10|]
+		|> Stream.ofArray
+		|> Stream.flatMap (fun _ -> Stream.infinite)
+		|> Stream.toPull
+		
+	let next = pull () 
+	next () // OutOfMemory Exception
+
 ***
 
 ### The Streams library
@@ -340,6 +422,47 @@ Implements a rich set of operations
 	|> ParStream.map (fun x -> x * x)
 	|> ParStream.sum
 
+---
+
+### ParStream 
+	type ParStream<'T> = (unit -> ('T -> unit)) -> unit
+	
+	val ofArray : 'T[] -> ParStream<'T>
+	let ofArray values = 
+		fun thunk -> 
+			let forks = 
+				values 
+				|> partitions 
+				|> Array.map (fun p -> (p, thunk ())) 
+				|> Array.map (fun (p, k) -> fork p k)
+			join forks	
+---
+			
+### ParStream 
+	type ParStream<'T> = (unit -> ('T -> unit)) -> unit
+	
+	val map : ('T -> 'R) -> ParStream<'T> -> ParStream<'R> 
+	let map f stream = 
+		fun thunk ->
+			stream (fun () ->
+						let k = thunk ()
+						(fun v -> k (f v)))
+			
+---
+
+### ParStream 
+	type ParStream<'T> = (unit -> ('T -> unit)) -> unit
+	
+	val sum : ParStream<'T> -> int 
+	let sum stream = 
+		let array = new ResizeArray<int ref>()
+		stream (fun () ->
+					let sum = ref 0
+					array.Add(sum)
+					(fun v -> sum := sum + v)
+				)
+		array |> Array.map (fun sum -> !sum) |> Array.sum
+			
 ***
 
 ### Some Benchmarks
@@ -408,7 +531,7 @@ https://github.com/mbraceproject/MBrace.Streams
 
 ***
 
-### Stream fusion or Beauty and the Beast
+### Beauty and the Beast
 
 Write beautiful functional code with the performance of imperative code.
 
@@ -418,6 +541,14 @@ Write beautiful functional code with the performance of imperative code.
 
 ![Stream fusion](images/Stream_Fusion.jpg)
 http://code.haskell.org/~dons/papers/icfp088-coutts.pdf
+
+---
+
+
+### Stream fusion in Haskell
+
+![Haskell beats C](images/Haskell_beats_C.jpg)
+http://research.microsoft.com/en-us/um/people/simonpj/papers/ndp/haskell-beats-C.pdf
 
 ***
 
