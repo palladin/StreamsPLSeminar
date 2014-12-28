@@ -550,6 +550,15 @@ http://code.haskell.org/~dons/papers/icfp088-coutts.pdf
 ![Haskell beats C](images/Haskell_beats_C.jpg)
 http://research.microsoft.com/en-us/um/people/simonpj/papers/ndp/haskell-beats-C.pdf
 
+---
+
+
+### Stream fusion in Haskell
+
+![HERMIT](images/HERMIT.jpg)
+http://www.ittc.ku.edu/~afarmer/concatmap-pepm14.pdf
+
+
 ***
 
 ### Stream operations are non-recursive
