@@ -467,7 +467,7 @@ Implements a rich set of operations
 
 ### Some Benchmarks
 
-##### i7 8 x 3.7 Ghz (4 physicall), 6 GB RAM
+##### i7 8 x 3.7 Ghz (4 physical), 6 GB RAM
 
 ---
 
