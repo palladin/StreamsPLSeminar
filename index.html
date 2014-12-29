@@ -524,12 +524,6 @@ ICOOOLPS'14
 
 </section>
 
-<section>
-
-<h3>Continuation passing style!</h3>
-
-</section>
-
 </section>
 
 <section>
@@ -666,6 +660,10 @@ ICOOOLPS'14
 <span class="l"> 9: </span>
 <span class="l">10: </span>
 <span class="l">11: </span>
+<span class="l">12: </span>
+<span class="l">13: </span>
+<span class="l">14: </span>
+<span class="l">15: </span>
 </pre>
 </td>
 <td class="snippet"><pre class="fssnip">
@@ -679,7 +677,11 @@ ICOOOLPS'14
 <span class="k">let</span> <span class="i">zip</span> <span class="i">stream</span> <span class="i">stream&#39;</span> <span class="o">=</span> 
     <span class="k">let</span> <span class="i">pullStream</span>, <span class="i">pullStream&#39;</span> <span class="o">=</span> <span class="i">toPull</span> <span class="i">stream</span>, <span class="i">toPull</span> <span class="i">stream&#39;</span>
     <span class="k">let</span> <span class="i">next</span>, <span class="i">next&#39;</span> <span class="o">=</span> <span class="i">pullStream</span> (), <span class="i">pullStream&#39;</span> () 
-    <span class="k">fun</span> <span class="i">k</span> <span class="k">-&gt;</span> <span class="i">k</span> (<span class="i">next</span> (), <span class="i">next&#39;</span> ())</pre>
+    <span class="k">fun</span> <span class="i">k</span> <span class="k">-&gt;</span>
+        <span class="k">try</span>
+            <span class="k">while</span> <span class="k">true</span> <span class="k">do</span>
+                <span class="i">k</span> (<span class="i">next</span> (), <span class="i">next&#39;</span> ())
+        <span class="k">with</span> <span class="i">StreamEnd</span> <span class="k">-&gt;</span> ()</pre>
 </td>
 </tr>
 </table>
